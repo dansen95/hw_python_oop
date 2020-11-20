@@ -11,12 +11,7 @@ class Calculator:
         self.records.append(new_record)
 
     def get_today_stats(self):
-        present_day = dt.datetime.now().date()
-        day_stats = []
-        for record in self.records:
-            if record.date == present_day:
-                day_stats.append(record.amount)
-        return sum(day_stats)
+        return sum(record.amount for record in self.records if record.date == dt.datetime.now().date())      
     
     def get_week_stats(self):
         present_day = dt.datetime.now().date()
@@ -28,7 +23,7 @@ class Calculator:
                 week_stats += record.amount
         return week_stats
 
-    def difference(self):
+    def get_difference(self):
         subtraction = self.limit - self.get_today_stats()
         return subtraction
         
@@ -36,9 +31,10 @@ class Calculator:
 class CaloriesCalculator(Calculator):
 
     def get_calories_remained(self):
-        if self.get_today_stats() < self.limit:
+        if Calculator.get_difference(self) > 0:
             return (f'Сегодня можно съесть что-нибудь ещё, ' 
-                f'но с общей калорийностью не более {Calculator.difference(self)} кКал')
+                f'но с общей калорийностью не более '
+                f'{self.get_difference()} кКал')
 
         return 'Хватит есть!'
 
@@ -55,23 +51,27 @@ class CashCalculator(Calculator):
         }
 
     def get_today_cash_remained(self, currency):
-        try: 
-            current_limit = Calculator.difference(self)
-            current_currency = self.currencies[currency]
-          
-            if current_limit == 0:
-                return f'Денег нет, держись'
 
-            if currency in self.currencies.keys():
-                current_limit = current_limit / current_currency[0]
-
-            if current_limit > 0:
-                return f'На сегодня осталось {current_limit:.2f} {current_currency[1]}'
-
-            return f'Денег нет, держись: твой долг - {abs(current_limit):.2f} {current_currency[1]}'
-    
-        except KeyError:
+        if currency not in self.currencies:
             return f'Валюта {currency} не поддерживается'
+        
+        current_limit = self.get_difference()
+        current_currency = self.currencies[currency]
+
+        if current_limit == 0:
+            return f'Денег нет, держись'
+
+        if currency in self.currencies:
+            current_limit = current_limit / current_currency[0]
+
+        if current_limit > 0:
+            return (f'На сегодня осталось '
+            f'{current_limit:.2f} {current_currency[1]}')
+
+        abs_current_limit = abs(current_limit)
+
+        return (f'Денег нет, держись: твой долг - '
+            f'{abs_current_limit:.2f} {current_currency[1]}')
         
 
 class Record:
