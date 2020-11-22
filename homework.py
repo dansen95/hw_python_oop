@@ -11,8 +11,10 @@ class Calculator:
         self.records.append(new_record)
 
     def get_today_stats(self):
-        return sum(record.amount for record in self.records if record.date == dt.datetime.now().date())      
-    
+        present_day = dt.datetime.now().date()
+        return (sum(record.amount for record in self.records
+                    if record.date == present_day))
+
     def get_week_stats(self):
         present_day = dt.datetime.now().date()
         delta = dt.timedelta(days=7)
@@ -26,15 +28,16 @@ class Calculator:
     def get_difference(self):
         subtraction = self.limit - self.get_today_stats()
         return subtraction
-        
+
 
 class CaloriesCalculator(Calculator):
 
     def get_calories_remained(self):
-        if Calculator.get_difference(self) > 0:
-            return (f'Сегодня можно съесть что-нибудь ещё, ' 
-                f'но с общей калорийностью не более '
-                f'{self.get_difference()} кКал')
+        current_calories_limit = self.get_difference()
+        if current_calories_limit > 0:
+            return (f'Сегодня можно съесть что-нибудь ещё, '
+                    f'но с общей калорийностью не более '
+                    f'{current_calories_limit} кКал')
 
         return 'Хватит есть!'
 
@@ -54,35 +57,33 @@ class CashCalculator(Calculator):
 
         if currency not in self.currencies:
             return f'Валюта {currency} не поддерживается'
-        
+
         current_limit = self.get_difference()
         current_currency = self.currencies[currency]
 
         if current_limit == 0:
-            return f'Денег нет, держись'
+            return 'Денег нет, держись'
 
         if currency in self.currencies:
-            current_limit = current_limit / current_currency[0]
+            current_limit = round(current_limit / current_currency[0], 2)
 
         if current_limit > 0:
             return (f'На сегодня осталось '
-            f'{current_limit:.2f} {current_currency[1]}')
+                    f'{current_limit} {current_currency[1]}')
 
-        abs_current_limit = abs(current_limit)
+        abs_current_limit = round(abs(current_limit), 2)
 
         return (f'Денег нет, держись: твой долг - '
-            f'{abs_current_limit:.2f} {current_currency[1]}')
-        
+                f'{abs_current_limit} {current_currency[1]}')
+
 
 class Record:
 
     def __init__(self, amount, comment, date=None):
         self.amount = amount
         self.comment = comment
+        self.date = (dt.datetime.strptime(date, '%d.%m.%Y').date()
+                     if isinstance(date, str) else date)
 
-        if isinstance(date, str):
-            self.date = dt.datetime.strptime(date, '%d.%m.%Y').date()
-
-        else:
-            self.date = date=dt.datetime.now().date()
-    
+        if date is None:
+            self.date = dt.datetime.now().date()
